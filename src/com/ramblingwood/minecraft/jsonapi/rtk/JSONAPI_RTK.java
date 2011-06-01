@@ -65,14 +65,6 @@ public class JSONAPI_RTK extends Module implements RTKListener {
 		loadJSONAPIConfig();
 		
 		try {
-			config.load();
-			api = RTKInterface.createRTKInterface(config.getInt("RTK.port", 25561), "localhost", config.getString("RTK.username", "user"), config.getString("RTK.password", "pass"));
-			config.save();
-		} catch (RTKInterfaceException e) {
-			e.printStackTrace();
-		}
-		
-		try {
 			api.registerRTKListener(this);
 			server = new JSONServer(auth, this);
 		} catch (IOException e) {
