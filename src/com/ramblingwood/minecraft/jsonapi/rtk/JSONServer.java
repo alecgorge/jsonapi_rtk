@@ -78,26 +78,31 @@ public class JSONServer extends NanoHTTPD {
 	public Response serve( String uri, String method, Properties header, Properties parms )	{
 		String calledMethod = parms.getProperty("method");
 		String key = parms.getProperty("key");
+		Response r;
 		
 		if(uri.equals("/api/call") && calledMethod.equals("remotetoolkit.startServer")) {
 			if(inst.whitelist.size() > 0 && !inst.whitelist.contains(header.get("X-REMOTE-ADDR"))) {
-				return new NanoHTTPD.Response(NanoHTTPD.HTTP_FORBIDDEN, NanoHTTPD.MIME_JSON, String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"You are not allowed to make API calls.\"}", calledMethod));
+				r = new NanoHTTPD.Response(NanoHTTPD.HTTP_FORBIDDEN, NanoHTTPD.MIME_JSON, String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"You are not allowed to make API calls.\"}", calledMethod));
+				return r;
 			}
 			if(!testLogin(calledMethod, key)) {
-				return new NanoHTTPD.Response(NanoHTTPD.HTTP_FORBIDDEN, NanoHTTPD.MIME_JSON, String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"Invalid API key.\"}", calledMethod));
+				r = new NanoHTTPD.Response(NanoHTTPD.HTTP_FORBIDDEN, NanoHTTPD.MIME_JSON, String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"Invalid API key.\"}", calledMethod));
+				return r;
 			}
 			
 			try {
 				inst.api.executeCommand(RTKInterface.CommandType.UNHOLD_SERVER);
-				return new NanoHTTPD.Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_JSON, String.format("{\"result\":\"success\", \"source\":\"%s\", \"success\": true}", calledMethod));
+				r = new NanoHTTPD.Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_JSON, String.format("{\"result\":\"success\", \"source\":\"%s\", \"success\": true}", calledMethod));
 			} catch (IOException e) {
 				e.printStackTrace();
-				return new NanoHTTPD.Response(NanoHTTPD.HTTP_INTERNALERROR, NanoHTTPD.MIME_JSON, String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"IO error turning on the server!\"}", calledMethod));
+				r = new NanoHTTPD.Response(NanoHTTPD.HTTP_INTERNALERROR, NanoHTTPD.MIME_JSON, String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"IO error turning on the server!\"}", calledMethod));
 			}
 		}
 		else {
-			return new NanoHTTPD.Response(NanoHTTPD.HTTP_INTERNALERROR, NanoHTTPD.MIME_JSON, String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"JSONAPI and the Minecraft are currently down. Use remotetoolkit.startServer to restart the server and have access to all the API methods.\"}", calledMethod));
+			r = new NanoHTTPD.Response(NanoHTTPD.HTTP_INTERNALERROR, NanoHTTPD.MIME_JSON, String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"JSONAPI and the Minecraft are currently down. Use remotetoolkit.startServer to restart the server and have access to all the API methods.\"}", calledMethod));
 		}
+		
+		return r;
 	}
 
 }
