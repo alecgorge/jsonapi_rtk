@@ -2,6 +2,7 @@
 //(C) Nick Stones-Havas 2011
 //Revision date: February 1st, 2011
 package com.ramblingwood.minecraft.jsonapi.rtk.RTKToolkit;
+
 /**
  * Abstract interface that defines an object capable of processing inbound API events.
  * 

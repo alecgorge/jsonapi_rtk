@@ -9,9 +9,8 @@ package com.ramblingwood.minecraft.jsonapi.rtk.RTKToolkit;
  * @author <a href="mailto:nick@drdanick.com">Nick Stones-Havas</a>
  * @version 1, 09/02/2011
  */
+@SuppressWarnings("serial")
 public class RTKInterfaceException extends Exception{
-	private static final long serialVersionUID = 1L;
-
 	public RTKInterfaceException(String msg) {
 		super(msg);
 	}

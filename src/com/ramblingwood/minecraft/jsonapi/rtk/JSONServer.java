@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Properties;
 
 import com.ramblingwood.minecraft.jsonapi.rtk.RTKToolkit.RTKInterface;
+import com.ramblingwood.minecraft.jsonapi.rtk.RTKToolkit.RTKInterfaceException;
 
 
 public class JSONServer extends NanoHTTPD {
@@ -78,31 +79,44 @@ public class JSONServer extends NanoHTTPD {
 	public Response serve( String uri, String method, Properties header, Properties parms )	{
 		String calledMethod = parms.getProperty("method");
 		String key = parms.getProperty("key");
+		String callback = parms.getProperty("callback");
 		Response r;
 		
 		if(uri.equals("/api/call") && calledMethod.equals("remotetoolkit.startServer")) {
 			if(inst.whitelist.size() > 0 && !inst.whitelist.contains(header.get("X-REMOTE-ADDR"))) {
-				r = new NanoHTTPD.Response(NanoHTTPD.HTTP_FORBIDDEN, NanoHTTPD.MIME_JSON, String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"You are not allowed to make API calls.\"}", calledMethod));
+				r = new NanoHTTPD.Response(NanoHTTPD.HTTP_FORBIDDEN, NanoHTTPD.MIME_JSON, wrapCallback(String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"You are not allowed to make API calls.\"}", calledMethod), callback));
 				return r;
 			}
 			if(!testLogin(calledMethod, key)) {
-				r = new NanoHTTPD.Response(NanoHTTPD.HTTP_FORBIDDEN, NanoHTTPD.MIME_JSON, String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"Invalid API key.\"}", calledMethod));
+				r = new NanoHTTPD.Response(NanoHTTPD.HTTP_FORBIDDEN, NanoHTTPD.MIME_JSON, wrapCallback(String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"Invalid API key.\"}", calledMethod), callback));
 				return r;
 			}
 			
 			try {
-				inst.api.executeCommand(RTKInterface.CommandType.UNHOLD_SERVER);
-				r = new NanoHTTPD.Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_JSON, String.format("{\"result\":\"success\", \"source\":\"%s\", \"success\": true}", calledMethod));
+				inst.api.executeCommand(RTKInterface.CommandType.UNHOLD_SERVER, null);
+				r = new NanoHTTPD.Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_JSON, wrapCallback(String.format("{\"result\":\"success\", \"source\":\"%s\", \"success\": true}", calledMethod), callback));
 			} catch (IOException e) {
 				e.printStackTrace();
-				r = new NanoHTTPD.Response(NanoHTTPD.HTTP_INTERNALERROR, NanoHTTPD.MIME_JSON, String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"IO error turning on the server!\"}", calledMethod));
+				r = new NanoHTTPD.Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_JSON, wrapCallback(String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"IO error encountered while turning on the server!\"}", calledMethod), callback));
+			} catch (RTKInterfaceException e) {
+				e.printStackTrace();
+				r = new NanoHTTPD.Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_JSON, wrapCallback(String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"RTKInterfaceException encountered while turning on the server!\"}", calledMethod), callback));
 			}
 		}
 		else {
-			r = new NanoHTTPD.Response(NanoHTTPD.HTTP_INTERNALERROR, NanoHTTPD.MIME_JSON, String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"JSONAPI and the Minecraft are currently down. Use remotetoolkit.startServer to restart the server and have access to all the API methods.\"}", calledMethod));
+			r = new NanoHTTPD.Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_JSON, wrapCallback(String.format("{\"result\": \"error\",\"source\": \"%s\",\"error\": \"JSONAPI and the Minecraft server are currently down. Use remotetoolkit.startServer to restart the server and have access to all the API methods.\"}", calledMethod), callback));
 		}
 		
 		return r;
+	}
+	
+	private String wrapCallback(String orig, String callback) {
+		if(callback == null || callback.isEmpty()) {
+			return orig;
+		}
+		else {
+			return callback+"("+orig+")";
+		}
 	}
 
 }
